@@ -1,0 +1,41 @@
+@"
+# Unity generated
+Sci-Fi/[Ll]ibrary/
+Sci-Fi/[Tt]emp/
+Sci-Fi/[Oo]bj/
+Sci-Fi/[Bb]uild/
+Sci-Fi/[Bb]uilds/
+Sci-Fi/[Ll]ogs/
+Sci-Fi/[Uu]ser[Ss]ettings/
+Sci-Fi/MemoryCaptures/
+Sci-Fi/Recordings/
+
+# IDE
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.user
+*.userprefs
+
+# React
+analytics-web/frontend/node_modules/
+analytics-web/frontend/dist/
+analytics-web/frontend/.vite/
+
+# Python
+analytics-web/backend/__pycache__/
+analytics-web/backend/*.pyc
+analytics-web/backend/.venv/
+analytics-web/backend/venv/
+
+# Local database
+analytics-web/backend/game_analytics.db
+
+# OS/env
+.DS_Store
+Thumbs.db
+desktop.ini
+.env
+*.env
+"@ | Set-Content -Encoding UTF8 .gitignore
