@@ -3,22 +3,32 @@ import { Link } from 'react-router-dom'
 import { Activity, Lock, User } from 'lucide-react'
 import { api } from '../api/api.js'
 
-export default function Login({ onLogin }) {
+export default function Register({ onRegister }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
-    setLoading(true)
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    setLoading(true)
     try {
-      const auth = await api.login({ username, password })
-      onLogin(auth)
-    } catch (loginError) {
-      setError(loginError.message || 'Login failed')
+      const auth = await api.register({
+        username,
+        password,
+        confirm_password: confirmPassword
+      })
+      onRegister(auth)
+    } catch (registerError) {
+      setError(registerError.message || 'Register failed')
     } finally {
       setLoading(false)
     }
@@ -30,7 +40,7 @@ export default function Login({ onLogin }) {
         <div className="login-brand">
           <div className="brand-mark"><Activity size={22} /></div>
           <div>
-            <h1>Explorer's Journal</h1>
+            <h1>Create Account</h1>
           </div>
         </div>
 
@@ -47,17 +57,25 @@ export default function Login({ onLogin }) {
             <span>Parola</span>
             <div className="input-shell">
               <Lock size={18} />
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
+              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" />
+            </div>
+          </label>
+
+          <label>
+            <span>Confirma parola</span>
+            <div className="input-shell">
+              <Lock size={18} />
+              <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />
             </div>
           </label>
 
           {error && <p className="login-error">{error}</p>}
 
           <button className="login-button" type="submit" disabled={loading}>
-            {loading ? 'Se verifica...' : 'Login'}
+            {loading ? 'Se creeaza...' : 'Create Account'}
           </button>
-          <Link className="secondary-auth-button" to="/register">
-            Register
+          <Link className="secondary-auth-button" to="/">
+            Back to Login
           </Link>
         </form>
       </section>

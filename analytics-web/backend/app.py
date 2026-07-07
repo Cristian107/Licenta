@@ -9,6 +9,7 @@ from database import (
     calculate_weapon_efficiency,
     close_db,
     get_db,
+    hash_password,
     init_db,
     row_to_dict,
     rows_to_dicts,
@@ -306,6 +307,53 @@ def login():
     })
 
 
+@app.post("/api/auth/register")
+def register():
+    payload = request.get_json(silent=True) or {}
+    username = str(payload.get("username", "")).strip()
+    password = str(payload.get("password", ""))
+    confirm_password = str(payload.get("confirm_password", payload.get("confirmPassword", "")))
+
+    if not username or not password:
+        return ok({"error": "Username and password are required"}, 400)
+
+    if len(username) < 3:
+        return ok({"error": "Username must have at least 3 characters"}, 400)
+
+    if len(password) < 4:
+        return ok({"error": "Password must have at least 4 characters"}, 400)
+
+    if confirm_password and password != confirm_password:
+        return ok({"error": "Passwords do not match"}, 400)
+
+    if is_admin_username(username):
+        return ok({"error": "Admin usernames cannot be created through public registration"}, 400)
+
+    db = get_db()
+    existing = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if existing:
+        return ok({"error": "Username is already taken"}, 409)
+
+    salt, password_hash = hash_password(password)
+    user_id = db.execute(
+        """
+        INSERT INTO users (username, password_hash, password_salt, role, is_banned, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (username, password_hash, salt, "player", 0, datetime.utcnow().isoformat())
+    ).lastrowid
+    player_id = resolve_player_id_for_user(db, username, "player")
+    token = create_auth_session(db, user_id)
+    db.commit()
+
+    user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return ok({
+        "user": public_user(user),
+        "player_id": player_id,
+        "token": token,
+    }, 201)
+
+
 @app.get("/api/players")
 def get_players():
     rows = get_db().execute("SELECT * FROM players ORDER BY created_at DESC").fetchall()
@@ -349,6 +397,60 @@ def admin_accounts():
 
     rows = get_db().execute("SELECT * FROM users ORDER BY username ASC").fetchall()
     return ok({"accounts": [account_row_to_dict(row) for row in rows]})
+
+
+@app.get("/api/admin/player-details")
+def admin_player_details():
+    _, error = require_admin_user()
+    if error:
+        return error
+
+    db = get_db()
+    users = db.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE LOWER(username) NOT LIKE '%admin%'
+        ORDER BY username ASC
+        """
+    ).fetchall()
+
+    for user in users:
+        resolve_player_id_for_user(db, user["username"], "player")
+    db.commit()
+
+    rows = db.execute(
+        """
+        SELECT
+            u.id AS user_id,
+            u.username,
+            u.created_at,
+            u.is_banned,
+            p.id AS player_id,
+            p.level,
+            COUNT(m.id) AS matches_played,
+            COALESCE(SUM(m.score), 0) AS total_score,
+            COALESCE(MAX(m.score), 0) AS high_score,
+            COALESCE(SUM(m.enemies_killed), 0) AS enemies_killed,
+            COALESCE(AVG(m.accuracy), 0) AS average_accuracy
+        FROM users u
+        JOIN players p ON p.username = u.username
+        LEFT JOIN matches m ON m.player_id = p.id
+        WHERE LOWER(u.username) NOT LIKE '%admin%'
+        GROUP BY u.id, p.id
+        ORDER BY u.username ASC
+        """
+    ).fetchall()
+
+    players = []
+    for row in rows:
+        item = row_to_dict(row)
+        item["role"] = "player"
+        item["status"] = "Banned" if int(item["is_banned"] or 0) else "Unbanned"
+        item["average_accuracy"] = round(float(item["average_accuracy"] or 0), 2)
+        players.append(item)
+
+    return ok({"players": players})
 
 
 @app.patch("/api/admin/accounts/<int:user_id>")
@@ -790,8 +892,18 @@ def leaderboard():
             COALESCE(SUM(m.enemies_killed), 0) AS kills,
             COALESCE(AVG(m.accuracy), 0) AS average_accuracy
         FROM players p
-        LEFT JOIN matches m ON m.player_id = p.id
+        JOIN matches m ON m.player_id = p.id
         GROUP BY p.id
+        HAVING
+            COUNT(m.id) > 0
+            AND (
+                COALESCE(SUM(m.score), 0) > 0
+                OR COALESCE(SUM(m.enemies_killed), 0) > 0
+                OR COALESCE(SUM(m.damage_dealt), 0) > 0
+                OR COALESCE(SUM(m.duration_seconds), 0) > 0
+                OR COALESCE(SUM(m.shots_fired), 0) > 0
+                OR COALESCE(SUM(m.coins_collected), 0) > 0
+            )
         ORDER BY total_score DESC, high_score DESC
         LIMIT 10
         """

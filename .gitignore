@@ -1,0 +1,72 @@
+# Documentation is not needed to run the game or analytics app
+Documentatie/
+documentatie_finala3/
+
+# Archives/backups
+*.zip
+*.rar
+*.7z
+
+# Unity generated folders
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Oo]bj/
+**/[Bb]uild/
+**/[Bb]uilds/
+**/[Ll]ogs/
+**/[Uu]ser[Ss]ettings/
+**/[Mm]emory[Cc]aptures/
+**/[Rr]ecordings/
+**/[Cc]aptures/
+
+# Unity generated IDE/project files
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Local editor state
+.vs/
+.idea/
+.vscode/
+**/.git-local-backup/
+
+# React/Vite generated dependencies and builds
+analytics-web/frontend/node_modules/
+analytics-web/frontend/dist/
+analytics-web/frontend/.vite/
+
+# Python generated files and virtual environments
+analytics-web/backend/__pycache__/
+analytics-web/backend/*.py[cod]
+analytics-web/backend/.venv/
+analytics-web/backend/venv/
+analytics-web/backend/env/
+
+# Local SQLite runtime database; schema.sql and seed.py recreate it
+analytics-web/backend/game_analytics.db
+analytics-web/backend/*.db-journal
+analytics-web/backend/*.sqlite
+analytics-web/backend/*.sqlite3
+
+# Environment/local secrets
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Keep Unity .meta files tracked. Do not add "*.meta" here.

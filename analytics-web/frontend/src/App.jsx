@@ -9,8 +9,10 @@ import Leaderboard from './pages/Leaderboard.jsx'
 import IndividualPerformance from './pages/IndividualPerformance.jsx'
 import CommunityDiscussions from './pages/CommunityDiscussions.jsx'
 import ManageAccounts from './pages/ManageAccounts.jsx'
+import PlayersDetails from './pages/PlayersDetails.jsx'
 import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
+import Register from './pages/Register.jsx'
 
 export default function App() {
   const [auth, setAuth] = useState(null)
@@ -24,7 +26,11 @@ export default function App() {
   function handleLogin(nextAuth) {
     setAuthToken(nextAuth.token)
     setAuth(nextAuth)
-    navigate(`/${encodeURIComponent(nextAuth.user.username)}`, { replace: true })
+    const nextIsAdmin = nextAuth.user.is_admin || nextAuth.user.username.toLowerCase().includes('admin')
+    const nextPath = nextIsAdmin
+      ? `/${encodeURIComponent(nextAuth.user.username)}/leaderboard`
+      : `/${encodeURIComponent(nextAuth.user.username)}`
+    navigate(nextPath, { replace: true })
   }
 
   function handleLogout() {
@@ -34,6 +40,10 @@ export default function App() {
   }
 
   if (!auth?.user) {
+    if (location.pathname === '/register') {
+      return <Register onRegister={handleLogin} />
+    }
+
     if (location.pathname !== '/') {
       return <Navigate to="/" replace />
     }
@@ -44,6 +54,7 @@ export default function App() {
   const playerId = auth.player_id || 1
   const username = auth.user.username
   const isAdmin = auth.user.is_admin || username.toLowerCase().includes('admin')
+  const homePath = isAdmin ? `/${encodeURIComponent(username)}/leaderboard` : `/${encodeURIComponent(username)}`
 
   return (
     <div className="app-shell">
@@ -51,10 +62,10 @@ export default function App() {
       <main className="main-panel">
         <Header auth={auth} playerId={playerId} />
         <Routes>
-          <Route path="/" element={<Navigate to={`/${encodeURIComponent(username)}`} replace />} />
+          <Route path="/" element={<Navigate to={homePath} replace />} />
           <Route path="/:username" element={
-            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout}>
-              <Overview playerId={playerId} />
+            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout} adminAllowed>
+              {isAdmin ? <Navigate to={homePath} replace /> : <Overview playerId={playerId} />}
             </ProtectedUserRoute>
           } />
           <Route path="/:username/history" element={
@@ -63,7 +74,7 @@ export default function App() {
             </ProtectedUserRoute>
           } />
           <Route path="/:username/leaderboard" element={
-            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout}>
+            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout} adminAllowed>
               <Leaderboard playerId={playerId} currentUsername={auth.user.username} />
             </ProtectedUserRoute>
           } />
@@ -83,8 +94,13 @@ export default function App() {
             </ProtectedUserRoute>
           } />
           <Route path="/:username/manage-accounts" element={
-            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout} requireAdmin>
+            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout} requireAdmin adminAllowed>
               <ManageAccounts />
+            </ProtectedUserRoute>
+          } />
+          <Route path="/:username/players-details" element={
+            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout} requireAdmin adminAllowed>
+              <PlayersDetails />
             </ProtectedUserRoute>
           } />
           <Route path="/:username/settings" element={
@@ -93,18 +109,18 @@ export default function App() {
             </ProtectedUserRoute>
           } />
           <Route path="/:username/*" element={
-            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout}>
-              <Navigate to={`/${encodeURIComponent(username)}`} replace />
+            <ProtectedUserRoute auth={auth} onUnauthorized={handleLogout} adminAllowed>
+              <Navigate to={homePath} replace />
             </ProtectedUserRoute>
           } />
-          <Route path="*" element={<Navigate to={`/${encodeURIComponent(username)}`} replace />} />
+          <Route path="*" element={<Navigate to={homePath} replace />} />
         </Routes>
       </main>
     </div>
   )
 }
 
-function ProtectedUserRoute({ auth, requireAdmin = false, onUnauthorized, children }) {
+function ProtectedUserRoute({ auth, requireAdmin = false, adminAllowed = false, onUnauthorized, children }) {
   const { username } = useParams()
   const isAuthorized = auth?.user?.username === username
   const isAdmin = auth?.user?.is_admin || auth?.user?.username?.toLowerCase().includes('admin')
@@ -121,6 +137,10 @@ function ProtectedUserRoute({ auth, requireAdmin = false, onUnauthorized, childr
 
   if (requireAdmin && !isAdmin) {
     return <Navigate to={`/${encodeURIComponent(auth.user.username)}`} replace />
+  }
+
+  if (isAdmin && !adminAllowed) {
+    return <Navigate to={`/${encodeURIComponent(auth.user.username)}/leaderboard`} replace />
   }
 
   return children

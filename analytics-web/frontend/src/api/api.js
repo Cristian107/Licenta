@@ -29,6 +29,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(credentials)
   }),
+  register: (payload) => request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
   players: () => request('/players'),
   player: (id = 1) => request(`/players/${id}`),
   overview: (id = 1) => request(`/players/${id}/overview`),
@@ -51,6 +55,7 @@ export const api = {
     body: JSON.stringify(payload)
   }),
   adminAccounts: () => request('/admin/accounts'),
+  adminPlayerDetails: () => request('/admin/player-details'),
   updateAccountStatus: (userId, isBanned) => request(`/admin/accounts/${userId}`, {
     method: 'PATCH',
     body: JSON.stringify({ is_banned: isBanned })

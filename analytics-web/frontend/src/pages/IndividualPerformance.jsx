@@ -36,6 +36,8 @@ export default function IndividualPerformance({ playerId = 1 }) {
 
     async function load() {
       try {
+        setError(null)
+        setData(null)
         let id = matchId
         if (!id) {
           const history = await api.matchHistory(playerId)

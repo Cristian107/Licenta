@@ -1,41 +1,27 @@
-@"
-# Unity generated
-Sci-Fi/[Ll]ibrary/
-Sci-Fi/[Tt]emp/
-Sci-Fi/[Oo]bj/
-Sci-Fi/[Bb]uild/
-Sci-Fi/[Bb]uilds/
-Sci-Fi/[Ll]ogs/
-Sci-Fi/[Uu]ser[Ss]ettings/
-Sci-Fi/MemoryCaptures/
-Sci-Fi/Recordings/
-
-# IDE
-.vs/
-.vscode/
-*.csproj
-*.sln
-*.user
-*.userprefs
-
-# React
-analytics-web/frontend/node_modules/
-analytics-web/frontend/dist/
-analytics-web/frontend/.vite/
+# React/Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 
 # Python
-analytics-web/backend/__pycache__/
-analytics-web/backend/*.pyc
-analytics-web/backend/.venv/
-analytics-web/backend/venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/.venv/
+backend/venv/
+backend/env/
 
-# Local database
-analytics-web/backend/game_analytics.db
+# Local database; recreated from schema.sql and seed.py
+backend/game_analytics.db
+backend/*.db-journal
+backend/*.sqlite
+backend/*.sqlite3
 
-# OS/env
-.DS_Store
-Thumbs.db
-desktop.ini
+# Environment/local secrets
 .env
 *.env
-"@ | Set-Content -Encoding UTF8 .gitignore
+
+# OS/editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
