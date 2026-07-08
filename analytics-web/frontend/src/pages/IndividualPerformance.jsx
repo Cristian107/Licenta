@@ -72,6 +72,7 @@ export default function IndividualPerformance({ playerId = 1 }) {
     value: weapon.usage_percent,
     kills: weapon.kills
   }))
+  const hasWeaponUsage = usageData.some((weapon) => Number(weapon.value || 0) > 0)
 
   return (
     <div className="page individual-page">
@@ -90,11 +91,11 @@ export default function IndividualPerformance({ playerId = 1 }) {
       </div>
 
       <div className="chart-grid two">
-        <ChartCard title="Kills Distribution" subtitle="Kills by 3 minute interval">
+        <ChartCard title="Kills Distribution" subtitle="Kills by 30 second interval">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={data.kill_distribution}>
               <CartesianGrid stroke="#222" strokeDasharray="4 4" />
-              <XAxis dataKey="interval" stroke="#9ca3af" />
+              <XAxis dataKey="interval" stroke="#9ca3af" interval={0} angle={-28} textAnchor="end" height={58} tick={{ fontSize: 11 }} />
               <YAxis stroke="#9ca3af" />
               <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="kills" radius={[8, 8, 0, 0]} fill="#00ff88" />
@@ -102,16 +103,20 @@ export default function IndividualPerformance({ playerId = 1 }) {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Weapon Usage" subtitle="Share of active weapon time">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={usageData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={96} paddingAngle={4}>
-                {usageData.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend verticalAlign="bottom" iconType="circle" />
-            </PieChart>
-          </ResponsiveContainer>
+        <ChartCard title="Weapon Usage" subtitle="Share of weapon activity">
+          {hasWeaponUsage ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={usageData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={96} paddingAngle={4}>
+                  {usageData.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend verticalAlign="bottom" iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">No weapon usage data for this match.</div>
+          )}
         </ChartCard>
       </div>
 

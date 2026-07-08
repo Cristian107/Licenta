@@ -47,7 +47,7 @@ export default function Overview({ playerId = 1 }) {
         <StatCard label="Most Used Weapon" value={data.most_used_weapon} detail="by usage time" />
       </div>
 
-      <ChartCard title="Performance Comparison" subtitle="Last match score compared with this player's average score" className="large-chart">
+      <ChartCard title="Performance Comparison" subtitle="Match score trend compared with this player's running average score" className="large-chart">
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={data.performance_comparison}>
             <CartesianGrid stroke="#242424" strokeDasharray="4 4" />
@@ -57,8 +57,8 @@ export default function Overview({ playerId = 1 }) {
             <Legend />
             <Line
               type="monotone"
-              dataKey="last_match_score"
-              name="Last Match"
+              dataKey="match_score"
+              name="Match Score"
               stroke="#00ff88"
               strokeWidth={3}
               dot={{ r: 4, fill: '#00ff88' }}
@@ -88,7 +88,7 @@ export default function Overview({ playerId = 1 }) {
         <ChartCard title="Consistency" subtitle="Score stability">
           <ResponsiveContainer width="100%" height={110}>
             <AreaChart data={data.performance_comparison}>
-              <Area type="monotone" dataKey="last_match_score" stroke="#00ff88" fill="#00ff8830" />
+              <Area type="monotone" dataKey="match_score" stroke="#00ff88" fill="#00ff8830" />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>

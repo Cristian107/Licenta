@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import math
 import secrets
 
 from flask import Flask, jsonify, request
@@ -797,18 +798,18 @@ def player_overview(player_id):
     total["average_accuracy"] = round(total["average_accuracy"], 2)
     total["average_duration"] = round(total["average_duration"], 0)
     total["average_score"] = round(total["average_score"], 2)
-    average_score = total["average_score"]
-    last_score = comparison_rows[-1]["score"] if comparison_rows else 0
-    performance = [
-        {
+    performance = []
+    running_score_total = 0
+    for index, row in enumerate(comparison_rows, start=1):
+        score = int(row["score"] or 0)
+        running_score_total += score
+        performance.append({
             "label": f"#{index}",
-            "last_match_score": last_score,
-            "average_score": average_score,
-        }
-        for index, _ in enumerate(comparison_rows, start=1)
-    ]
+            "match_score": score,
+            "average_score": round(running_score_total / index, 2),
+        })
     if not performance:
-        performance = [{"label": "No matches", "last_match_score": 0, "average_score": 0}]
+        performance = [{"label": "No matches", "match_score": 0, "average_score": 0}]
     return ok({
         "player": row_to_dict(player),
         "totals": total,
@@ -860,12 +861,17 @@ def individual_performance(player_id, match_id):
 
     weapons = rows_to_dicts(db.execute("SELECT * FROM weapon_stats WHERE match_id = ? ORDER BY usage_seconds DESC", (match_id,)).fetchall())
     kills = rows_to_dicts(db.execute("SELECT * FROM kill_events WHERE match_id = ? ORDER BY time_seconds ASC", (match_id,)).fetchall())
-    total_usage = max(sum(item["usage_seconds"] for item in weapons), 1)
+    total_usage_seconds = sum(item["usage_seconds"] for item in weapons)
+    if total_usage_seconds > 0:
+        for weapon in weapons:
+            weapon["usage_percent"] = round((weapon["usage_seconds"] / total_usage_seconds) * 100.0, 2)
+    else:
+        total_activity = sum(item["shots_fired"] for item in weapons) or sum(item["kills"] for item in weapons) or len(weapons) or 1
+        for weapon in weapons:
+            activity = weapon["shots_fired"] or weapon["kills"] or 1
+            weapon["usage_percent"] = round((activity / total_activity) * 100.0, 2)
 
-    for weapon in weapons:
-        weapon["usage_percent"] = round((weapon["usage_seconds"] / total_usage) * 100.0, 2)
-
-    bins = build_kill_distribution(kills)
+    bins = build_kill_distribution(kills, match["duration_seconds"])
     accuracy_progression = build_accuracy_progression(match)
     radar = build_radar(match)
 
@@ -978,12 +984,33 @@ def weapon_arsenal(player_id):
     return ok({"arsenal": arsenal})
 
 
-def build_kill_distribution(kill_events):
-    labels = ["0-3", "3-6", "6-9", "9-12", "12-15", "15-18"]
-    bins = [{"interval": label, "kills": 0} for label in labels]
+def format_seconds_label(seconds):
+    seconds = max(int(seconds or 0), 0)
+    minutes = seconds // 60
+    remaining = seconds % 60
+    return f"{minutes}:{remaining:02d}"
+
+
+def build_kill_distribution(kill_events, duration_seconds=0):
+    interval_seconds = 30
+    max_event_time = 0
     for event in kill_events:
-        minute = float(event["time_seconds"] or 0) / 60.0
-        index = min(int(minute // 3), len(bins) - 1)
+        max_event_time = max(max_event_time, int(event["time_seconds"] or 0))
+
+    chart_duration = max(int(duration_seconds or 0), max_event_time, interval_seconds)
+    bin_count = max(5, math.ceil(chart_duration / interval_seconds))
+    bins = []
+    for index in range(bin_count):
+        start = index * interval_seconds
+        end = start + interval_seconds
+        bins.append({
+            "interval": f"{format_seconds_label(start)}-{format_seconds_label(end)}",
+            "kills": 0,
+        })
+
+    for event in kill_events:
+        seconds = max(float(event["time_seconds"] or 0), 0)
+        index = min(int(seconds // interval_seconds), len(bins) - 1)
         bins[index]["kills"] += 1
     return bins
 
